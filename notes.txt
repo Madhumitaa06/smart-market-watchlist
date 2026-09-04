@@ -1,0 +1,23 @@
+DECISIONS LOG
+
+Duplicate prevention: UNIQUE(user_id, ticker) at DB level, not a Python check.
+A check-then-insert has a race window between the two steps; the constraint doesn't.
+
+Failure handling: per-stock isolation. One ticker failing marks only that row
+unavailable; the rest of the watchlist renders normally. A user with 10 stocks
+shouldn't lose the whole view because one fetch timed out. yfinance is unofficial
+and will intermittently fail - treated as expected, not exceptional.
+
+Error surfaces: two fields, not one. 'reason' is a stable code the program branches
+on; 'message' is plain English for the user. Matching on message text would break
+the moment wording changes.
+
+Unknown errors default to service_unavailable, not unknown_ticker. When we don't
+know whose fault it is, we don't blame the user - telling someone to fix their
+symbol while Yahoo is down sends them chasing the wrong problem.
+
+Logging: users see a friendly message; full exception detail goes to the log.
+Nothing is swallowed silently.
+
+user_id column exists but is hardcoded to 1. No auth yet - the slot is there so
+adding login later doesn't require a migration.
