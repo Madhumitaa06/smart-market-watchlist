@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+yfinance
+bcrypt
+itsdangerous
+pydantic
+requests
