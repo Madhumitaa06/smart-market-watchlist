@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How Baseline works</title>
+<style>
+  body {
+    margin: 0; background: #fbfbf9; color: #1a1a1a;
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 620px; margin: 0 auto; padding: 40px 20px 80px; }
+  h1 { font-size: 26px; letter-spacing: -0.02em; margin: 0 0 8px; }
+  .lede { color: #6b6b6b; margin: 0 0 36px; }
+  h2 { font-size: 18px; margin: 36px 0 10px; }
+  p { margin: 0 0 14px; }
+  .eg {
+    background: #f4efe4; border: 1px solid #d9c9a3;
+    border-radius: 8px; padding: 14px 16px; margin: 16px 0;
+    font-size: 15px;
+  }
+  .eg b { font-weight: 600; }
+  a { color: #6b6b6b; }
+  footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #e6e4df; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>How Baseline works</h1>
+  <p class="lede">Why this app says what it says.</p>
+
+  <h2>The problem with "alert me at 5%"</h2>
+  <p>
+    Most watchlists flag a stock when it moves more than some fixed amount.
+    That treats every stock the same, and stocks aren't the same.
+  </p>
+  <div class="eg">
+    A stock that normally drifts <b>0.3%</b> a day moves <b>4%</b>.
+    Something happened.<br><br>
+    A stock that routinely swings <b>5%</b> moves <b>5%</b>.
+    That's a Tuesday.
+  </div>
+  <p>
+    A fixed threshold misses the first and cries wolf on the second. Set it
+    low and everything is flagged, which means nothing is. Set it high and
+    you miss real events on calmer stocks.
+  </p>
+
+  <h2>What Baseline does instead</h2>
+  <p>
+    Every stock is judged against <em>its own</em> recent behaviour. Baseline
+    looks at the last 30 trading days, works out how much that particular
+    stock typically moves in a day, and asks how far today sits from that.
+  </p>
+  <p>
+    A move roughly two standard deviations from normal gets flagged — about
+    the most extreme 5% of days for that stock. Everything else stays quiet.
+  </p>
+
+  <h2>Volume changes the story</h2>
+  <p>
+    A big price move on heavy trading means a lot of people acted. The same
+    move on thin trading might be one large order. Baseline says which:
+  </p>
+  <div class="eg">
+    <b>On 3.6× normal volume</b> — this looks like a real event.<br><br>
+    <b>On 0.3× normal volume</b> — this could be a single large trade rather
+    than broad activity.
+  </div>
+  <p>
+    The second reading is deliberately hedged. Price alone isn't enough to
+    claim something happened.
+  </p>
+
+  <h2>When it says nothing</h2>
+  <p>
+    If no stock crossed the line, Baseline says so plainly. "Nothing unusual"
+    is a real answer, not a failure to find something. An app that always has
+    something urgent to report is an app you stop trusting.
+  </p>
+
+  <h2>What it won't claim</h2>
+  <p>
+    New stocks need about 20 days of history before there's anything to
+    compare against. Until then Baseline says it doesn't know, rather than
+    guessing.
+  </p>
+  <p>
+    Prices come from Yahoo Finance and can be delayed or briefly unavailable.
+    Every stock shows how old its data is, and whether the market is open —
+    a price you see at 9pm is a closing price, not a live one.
+  </p>
+
+  <h2>What this isn't</h2>
+  <p>
+    Baseline tells you what changed. It doesn't tell you what will happen
+    next, and it isn't advice. An unusual move is a reason to look, not a
+    reason to act.
+  </p>
+
+  <footer><a href="/">&larr; Back to your watchlist</a></footer>
+
+</div>
+</body>
+</html>

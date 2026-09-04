@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 import database
@@ -134,3 +135,20 @@ def remove_from_watchlist(ticker: str):
         raise HTTPException(status_code=404, detail=f"{ticker} is not in your watchlist.")
 
     return {"ticker": ticker, "removed": True}
+
+
+@app.get("/")
+def home():
+    return FileResponse("static/index.html")
+
+
+@app.get("/how")
+def how_it_works():
+    """
+    The reasoning behind the app, in the app.
+
+    Kept in the product rather than only in a README because the argument
+    for judging each stock against its own baseline is the whole point -
+    a user who doesn't understand why it stays quiet will assume it's broken.
+    """
+    return FileResponse("static/how.html")

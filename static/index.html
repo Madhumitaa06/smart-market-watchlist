@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Baseline</title>
+<style>
+  :root {
+    --bg: #fbfbf9; --card: #ffffff; --ink: #1a1a1a; --muted: #6b6b6b;
+    --line: #e6e4df; --up: #0a7d4f; --down: #c0392b;
+    --flag: #f4efe4; --flag-edge: #d9c9a3;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 48px 24px 80px; }
+
+  header { display: flex; align-items: flex-start; justify-content: space-between; }
+  h1 { font-size: 44px; margin: 0; letter-spacing: -0.03em; }
+  .sub { color: var(--muted); font-size: 16px; margin: 6px 0 0; }
+  .market {
+    font-size: 14px; color: var(--muted); white-space: nowrap;
+    border: 1px solid var(--line); border-radius: 99px; padding: 6px 14px;
+  }
+
+  .summary { margin: 28px 0; font-size: 22px; line-height: 1.4; }
+
+  .add { display: flex; gap: 10px; margin-bottom: 20px; }
+  .add input {
+    flex: 1; padding: 14px 16px; font-size: 17px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--card);
+  }
+  .add button {
+    padding: 14px 28px; font-size: 17px; cursor: pointer;
+    border: 1px solid var(--ink); background: var(--ink); color: #fff; border-radius: 8px;
+  }
+  .add button:disabled { opacity: .5; cursor: default; }
+
+  .error {
+    background: #fdf0ee; border: 1px solid #e8c4bd; color: #8c2f22;
+    padding: 12px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 16px;
+  }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: 32px 0 8px; }
+  .tab {
+    background: none; border: none; cursor: pointer; font-size: 16px;
+    padding: 12px 18px; color: var(--muted); border-bottom: 2px solid transparent;
+    margin-bottom: -1px; font-family: inherit;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.on { color: var(--ink); border-bottom-color: var(--ink); font-weight: 600; }
+  .tab .count {
+    font-size: 13px; background: var(--line); color: var(--muted);
+    border-radius: 99px; padding: 1px 8px; margin-left: 7px;
+  }
+  .tab.on .count { background: var(--ink); color: #fff; }
+
+  .row {
+    display: flex; align-items: baseline; gap: 20px;
+    padding: 18px 6px; border-bottom: 1px solid var(--line);
+    cursor: pointer; font-size: 18px;
+  }
+  .row:hover { background: #f5f3ee; }
+  .row:active { background: #e8e4d9; transition: none; }
+  .row { transition: background .18s ease; }
+  .row.flash { background: #ded8c8; transition: none; }
+  .row .tick { font-weight: 500; flex: 1; }
+  .row .price { color: var(--muted); }
+  .row.flag { background: var(--flag); border-bottom-color: var(--flag-edge); }
+  .row.flag:hover { background: #efe8d8; }
+  .row .note { flex-basis: 100%; font-size: 16px; color: #5a4f38; margin-top: 6px; }
+  .row.flag { flex-wrap: wrap; padding: 20px 14px; border-radius: 10px;
+              border: 1px solid var(--flag-edge); margin-bottom: 10px; }
+
+  .up { color: var(--up); }
+  .down { color: var(--down); }
+  .num { font-variant-numeric: tabular-nums; }
+  .empty { color: var(--muted); padding: 32px 0; }
+
+  footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--line); }
+  footer a { color: var(--muted); font-size: 16px; }
+
+  /* Detail panel */
+  .scrim {
+    position: fixed; inset: 0; background: rgba(20,20,18,.35);
+    display: none; z-index: 10;
+  }
+  .scrim.on { display: block; }
+  .panel {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(460px, 100%);
+    background: var(--bg); border-left: 1px solid var(--line);
+    padding: 32px 28px; overflow-y: auto; z-index: 11;
+    transform: translateX(100%); transition: transform .18s ease;
+  }
+  .panel.on { transform: translateX(0); }
+  .panel h2 { font-size: 28px; margin: 0 0 2px; letter-spacing: -0.02em; }
+  .panel .close {
+    position: absolute; top: 20px; right: 22px; background: none; border: none;
+    font-size: 26px; cursor: pointer; color: var(--muted); line-height: 1;
+  }
+  .verdict {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 10px; padding: 16px; margin: 20px 0 24px; font-size: 17px;
+  }
+  .verdict.flag { background: var(--flag); border-color: var(--flag-edge); }
+  .facts { border-top: 1px solid var(--line); }
+  .fact {
+    display: flex; justify-content: space-between; gap: 16px;
+    padding: 12px 2px; border-bottom: 1px solid var(--line); font-size: 16px;
+  }
+  .fact .k { color: var(--muted); }
+  .fact .v { text-align: right; font-variant-numeric: tabular-nums; }
+  .grp { font-size: 13px; text-transform: uppercase; letter-spacing: .1em;
+         color: var(--muted); margin: 28px 0 4px; font-weight: 600; }
+  .panel .rm {
+    margin-top: 28px; width: 100%; padding: 12px; font-size: 16px; cursor: pointer;
+    background: none; border: 1px solid var(--line); border-radius: 8px;
+    color: var(--down); font-family: inherit;
+  }
+  .panel .rm:hover { border-color: var(--down); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Baseline</h1>
+      <p class="sub">A watchlist that tells you what actually changed.</p>
+    </div>
+    <span class="market" id="market">&nbsp;</span>
+  </header>
+
+  <p class="summary" id="summary">Loading…</p>
+  <div class="error" id="error" style="display:none"></div>
+
+  <div class="add">
+    <input id="ticker" placeholder="Add a stock, e.g. RELIANCE.NS" autocomplete="off">
+    <button id="addBtn">Add</button>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+  <div id="body"></div>
+
+  <footer><a href="/how">How this works &rarr;</a></footer>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="panel" id="panel"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+let DATA = null;
+let TAB = "needs_attention";
+
+const TABS = [
+  ["needs_attention", "Needs attention"],
+  ["quiet", "Quiet"],
+  ["unavailable", "Unavailable"],
+];
+
+const pct = n => n == null ? "" :
+  `<span class="${n >= 0 ? "up" : "down"} num">${n >= 0 ? "+" : ""}${n.toFixed(2)}%</span>`;
+const money = n => n == null ? "—" : `<span class="num">₹${n.toLocaleString("en-IN")}</span>`;
+
+function showError(msg) {
+  const e = $("error");
+  if (!msg) { e.style.display = "none"; return; }
+  e.textContent = msg; e.style.display = "block";
+}
+
+function renderTabs() {
+  $("tabs").innerHTML = TABS.map(([key, label]) => {
+    const n = (DATA[key] || []).length;
+    return `<button class="tab ${key === TAB ? "on" : ""}" data-tab="${key}">
+              ${label}<span class="count">${n}</span>
+            </button>`;
+  }).join("");
+
+  document.querySelectorAll("[data-tab]").forEach(b => {
+    b.onclick = () => { TAB = b.dataset.tab; renderTabs(); renderList(); };
+  });
+}
+
+function renderList() {
+  const items = DATA[TAB] || [];
+
+  if (!items.length) {
+    const msg = {
+      needs_attention: "Nothing moved unusually. That's the normal state.",
+      quiet: "No quiet stocks right now.",
+      unavailable: "All your stocks are reporting fine.",
+    }[TAB];
+    $("body").innerHTML = `<p class="empty">${msg}</p>`;
+    return;
+  }
+
+  $("body").innerHTML = items.map(s => {
+    if (TAB === "unavailable") {
+      return `<div class="row" data-open="${s.ticker}">
+                <span class="tick">${s.ticker}</span>
+                <span class="price">${s.message || "couldn't fetch a price"}</span>
+              </div>`;
+    }
+    const flag = TAB === "needs_attention";
+    return `<div class="row ${flag ? "flag" : ""}" data-open="${s.ticker}">
+              <span class="tick">${s.ticker}</span>
+              <span class="price">${money(s.price)}</span>
+              <span>${pct(s.change_pct)}</span>
+              ${flag ? `<span class="note">${s.headline || ""}</span>` : ""}
+            </div>`;
+  }).join("");
+
+  document.querySelectorAll("[data-open]").forEach(r => {
+    r.onclick = () => {
+      // Brief visual confirmation the tap registered, before the panel opens.
+      r.classList.add('flash');
+      setTimeout(() => r.classList.remove('flash'), 180);
+      openPanel(r.dataset.open);
+    };
+  });
+}
+
+function findStock(ticker) {
+  for (const [key] of TABS) {
+    const hit = (DATA[key] || []).find(s => s.ticker === ticker);
+    if (hit) return hit;
+  }
+  return null;
+}
+
+function fact(k, v) {
+  return `<div class="fact"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+}
+
+function openPanel(ticker) {
+  const s = findStock(ticker);
+  if (!s) return;
+
+  const a = s.anomaly || {};
+  let html = `<button class="close" id="closeBtn">&times;</button>
+              <h2>${s.ticker}</h2>
+              <p class="sub">Added ${s.added_at ? s.added_at.split(" ")[0] : "—"}</p>`;
+
+  if (!s.ok) {
+    html += `<div class="verdict">${s.message || "We couldn't fetch a price for this stock."}</div>`;
+  } else {
+    html += `<div class="verdict ${a.unusual ? "flag" : ""}">
+               ${a.message || "No assessment available."}
+             </div>`;
+
+    html += `<div class="grp">Price</div><div class="facts">`;
+    html += fact("Current", money(s.price));
+    html += fact("Previous close", money(s.previous_close));
+    html += fact("Change", `${s.change >= 0 ? "+" : ""}₹${Math.abs(s.change).toFixed(2)}`);
+    html += fact("Change %", pct(s.change_pct));
+    html += `</div>`;
+
+    if (a.assessed) {
+      html += `<div class="grp">Against its own baseline</div><div class="facts">`;
+      html += fact("Today's move", `${Math.abs(a.today_move_pct).toFixed(2)}%`);
+      html += fact("Typical daily range", `${a.typical_move_pct}%`);
+      html += fact("Multiple of typical",
+                   `${(Math.abs(a.today_move_pct) / a.typical_move_pct).toFixed(1)}×`);
+      html += fact("Volume vs 30-day average",
+                   a.volume_ratio ? `${a.volume_ratio}×` : "—");
+      html += fact("Days of history used", a.days_of_history);
+      html += `</div>`;
+    } else {
+      html += `<div class="grp">Baseline</div><div class="facts">`;
+      html += fact("Status", a.message || "Not enough history yet");
+      html += `</div>`;
+    }
+
+    html += `<div class="grp">Data</div><div class="facts">`;
+    html += fact("Volume today", s.volume ? s.volume.toLocaleString("en-IN") : "—");
+    html += fact("Price is", s.price_state || "—");
+    html += fact("Fetched", s.updated || "just now");
+    html += fact("Market", DATA.market_open ? "open" : "closed");
+    html += `</div>`;
+  }
+
+  html += `<button class="rm" id="rmBtn">Remove from watchlist</button>`;
+
+  $("panel").innerHTML = html;
+  $("panel").classList.add("on");
+  $("scrim").classList.add("on");
+
+  $("closeBtn").onclick = closePanel;
+  $("rmBtn").onclick = () => { closePanel(); remove(ticker); };
+}
+
+function closePanel() {
+  $("panel").classList.remove("on");
+  $("scrim").classList.remove("on");
+}
+
+$("scrim").onclick = closePanel;
+document.onkeydown = e => { if (e.key === "Escape") closePanel(); };
+
+async function load() {
+  try {
+    const res = await fetch("/watchlist");
+    if (!res.ok) throw new Error("Couldn't load your watchlist.");
+    DATA = await res.json();
+
+    $("summary").textContent = DATA.summary || "";
+    $("market").textContent = DATA.market_open ? "market open" : "market closed";
+
+    // Land on whichever tab has something worth seeing.
+    if ((DATA.needs_attention || []).length) TAB = "needs_attention";
+    else if ((DATA.quiet || []).length) TAB = "quiet";
+
+    renderTabs();
+    renderList();
+    showError(null);
+  } catch (e) {
+    showError(e.message);
+  }
+}
+
+async function add() {
+  const input = $("ticker");
+  const value = input.value.trim();
+  if (!value) return;
+
+  const btn = $("addBtn");
+  btn.disabled = true; btn.textContent = "Adding…";
+
+  try {
+    const res = await fetch("/watchlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticker: value })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showError(data.detail || "Couldn't add that stock.");
+    } else {
+      input.value = ""; showError(null); await load();
+    }
+  } catch (e) {
+    showError("Something went wrong. Try again.");
+  } finally {
+    btn.disabled = false; btn.textContent = "Add";
+  }
+}
+
+async function remove(ticker) {
+  try {
+    await fetch(`/watchlist/${encodeURIComponent(ticker)}`, { method: "DELETE" });
+    await load();
+  } catch (e) {
+    showError("Couldn't remove that stock.");
+  }
+}
+
+$("addBtn").onclick = add;
+$("ticker").onkeydown = e => { if (e.key === "Enter") add(); };
+
+load();
+</script>
+</body>
+</html>
