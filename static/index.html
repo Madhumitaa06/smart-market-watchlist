@@ -126,6 +126,11 @@
     background: none; border: none; color: var(--ink); cursor: pointer;
     text-decoration: underline; font-size: 15px; font-family: inherit; padding: 0;
   }
+  .waking {
+    background: var(--flag); border: 1px solid var(--flag-edge);
+    border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+    font-size: 15px; color: #5a4f38;
+  }
   .who { font-size: 15px; color: var(--muted); }
   .who button {
     background: none; border: none; color: var(--muted); cursor: pointer;
@@ -185,6 +190,11 @@
   <div class="gate">
     <h1>Baseline</h1>
     <p class="sub">A watchlist that tells you what actually changed.</p>
+
+    <div class="waking" id="waking" style="display:none">
+      Waking the server up. Free hosting sleeps after a few minutes idle,
+      so this first load can take up to a minute. Later ones are instant.
+    </div>
 
     <div class="error" id="gateError" style="display:none"></div>
 
@@ -644,11 +654,25 @@ $("logoutBtn").onclick = async () => {
 
 // Decide which screen to show on arrival.
 (async () => {
+  // A cold instance can take ~50s to respond. Rather than leave the user
+  // staring at nothing, say what's happening if we're still waiting after
+  // a couple of seconds - a silent wait reads as broken.
+  const slow = setTimeout(() => {
+    const box = $("waking");
+    if (box) box.style.display = "block";
+  }, 2500);
+
   try {
     const res = await fetch("/me");
+    clearTimeout(slow);
+    const box = $("waking");
+    if (box) box.style.display = "none";
     const data = await res.json();
     if (data.logged_in) showApp(); else showGate(null);
   } catch (e) {
+    clearTimeout(slow);
+    const box = $("waking");
+    if (box) box.style.display = "none";
     showGate("Couldn't reach the server.");
   }
 })();
