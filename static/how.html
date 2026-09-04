@@ -4,102 +4,297 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>How Baseline works</title>
+
 <style>
-  body {
-    margin: 0; background: #fbfbf9; color: #1a1a1a;
-    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  :root {
+    --bg: #fbfbf9;
+    --card: #ffffff;
+    --ink: #1a1a1a;
+    --muted: #6b6b6b;
+    --line: #e6e4df;
+    --flag: #f4efe4;
+    --flag-edge: #d9c9a3;
   }
-  .wrap { max-width: 620px; margin: 0 auto; padding: 40px 20px 80px; }
-  h1 { font-size: 26px; letter-spacing: -0.02em; margin: 0 0 8px; }
-  .lede { color: #6b6b6b; margin: 0 0 36px; }
-  h2 { font-size: 18px; margin: 36px 0 10px; }
-  p { margin: 0 0 14px; }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, sans-serif;
+  }
+
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  .back {
+    color: var(--muted);
+    font-size: 14px;
+    text-decoration: none;
+  }
+
+  .back:hover {
+    color: var(--ink);
+  }
+
+  h1 {
+    font-size: 42px;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    margin: 34px 0 8px;
+  }
+
+  .lede {
+    color: var(--muted);
+    font-size: 18px;
+    margin: 0 0 36px;
+    max-width: 580px;
+  }
+
+  .steps {
+    display: grid;
+    gap: 10px;
+    margin: 30px 0 44px;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    gap: 14px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 17px 18px;
+  }
+
+  .number {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .step strong {
+    display: block;
+    font-size: 16px;
+    margin-bottom: 2px;
+  }
+
+  .step span {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  h2 {
+    font-size: 21px;
+    letter-spacing: -0.02em;
+    margin: 40px 0 10px;
+  }
+
+  p {
+    margin: 0 0 14px;
+  }
+
   .eg {
-    background: #f4efe4; border: 1px solid #d9c9a3;
-    border-radius: 8px; padding: 14px 16px; margin: 16px 0;
+    background: var(--flag);
+    border: 1px solid var(--flag-edge);
+    border-radius: 10px;
+    padding: 17px 18px;
+    margin: 18px 0;
     font-size: 15px;
   }
-  .eg b { font-weight: 600; }
-  a { color: #6b6b6b; }
-  footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #e6e4df; }
+
+  .eg b {
+    font-weight: 600;
+  }
+
+  .principle {
+    border-left: 3px solid var(--ink);
+    padding: 5px 0 5px 18px;
+    margin: 22px 0;
+    font-size: 18px;
+  }
+
+  .quiet {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 17px 18px;
+    margin: 18px 0;
+  }
+
+  .quiet strong {
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  .quiet span {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  footer {
+    margin-top: 52px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+  }
+
+  footer a {
+    color: var(--muted);
+  }
+
+  @media (max-width: 600px) {
+    .wrap {
+      padding: 30px 18px 60px;
+    }
+
+    h1 {
+      font-size: 36px;
+    }
+
+    .lede {
+      font-size: 17px;
+    }
+  }
 </style>
 </head>
+
 <body>
 <div class="wrap">
 
+  <a class="back" href="/">&larr; Back to Baseline</a>
+
   <h1>How Baseline works</h1>
-  <p class="lede">Why this app says what it says.</p>
 
-  <h2>The problem with "alert me at 5%"</h2>
-  <p>
-    Most watchlists flag a stock when it moves more than some fixed amount.
-    That treats every stock the same, and stocks aren't the same.
+  <p class="lede">
+    Most watchlists tell you that a stock moved.
+    Baseline tries to tell you when that movement is actually unusual.
   </p>
-  <div class="eg">
-    A stock that normally drifts <b>0.3%</b> a day moves <b>4%</b>.
-    Something happened.<br><br>
-    A stock that routinely swings <b>5%</b> moves <b>5%</b>.
-    That's a Tuesday.
+
+  <div class="steps">
+
+    <div class="step">
+      <div class="number">1</div>
+      <div>
+        <strong>Add a stock</strong>
+        <span>Choose the stocks you want Baseline to watch.</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="number">2</div>
+      <div>
+        <strong>Build its baseline</strong>
+        <span>Baseline learns how much that particular stock normally moves.</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="number">3</div>
+      <div>
+        <strong>Compare today's move</strong>
+        <span>Today's movement is compared with the stock's own recent behaviour.</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="number">4</div>
+      <div>
+        <strong>See what changed</strong>
+        <span>Unusual moves are highlighted so you know what deserves a closer look.</span>
+      </div>
+    </div>
+
   </div>
+
+  <h2>Why not just use a fixed 5% alert?</h2>
+
   <p>
-    A fixed threshold misses the first and cries wolf on the second. Set it
-    low and everything is flagged, which means nothing is. Set it high and
-    you miss real events on calmer stocks.
+    A fixed threshold treats every stock the same.
+    But stocks behave very differently.
   </p>
 
-  <h2>What Baseline does instead</h2>
-  <p>
-    Every stock is judged against <em>its own</em> recent behaviour. Baseline
-    looks at the last 30 trading days, works out how much that particular
-    stock typically moves in a day, and asks how far today sits from that.
-  </p>
-  <p>
-    A move roughly two standard deviations from normal gets flagged — about
-    the most extreme 5% of days for that stock. Everything else stays quiet.
-  </p>
-
-  <h2>Volume changes the story</h2>
-  <p>
-    A big price move on heavy trading means a lot of people acted. The same
-    move on thin trading might be one large order. Baseline says which:
-  </p>
   <div class="eg">
-    <b>On 3.6× normal volume</b> — this looks like a real event.<br><br>
-    <b>On 0.3× normal volume</b> — this could be a single large trade rather
-    than broad activity.
+    A stock that normally moves <b>0.3%</b> a day suddenly moves <b>4%</b>.
+    That's unusual.<br><br>
+
+    A stock that normally moves <b>5%</b> suddenly moves <b>5%</b>.
+    That's normal for that stock.
   </div>
+
   <p>
-    The second reading is deliberately hedged. Price alone isn't enough to
-    claim something happened.
+    A fixed alert misses the first situation or creates too much noise
+    in the second. Baseline adapts to the stock instead.
   </p>
 
-  <h2>When it says nothing</h2>
+  <div class="principle">
+    <b>The question isn't “Did the stock move a lot?”</b><br>
+    It's “Did the stock move a lot compared with what is normal for it?”
+  </div>
+
+  <h2>Volume adds context</h2>
+
   <p>
-    If no stock crossed the line, Baseline says so plainly. "Nothing unusual"
-    is a real answer, not a failure to find something. An app that always has
-    something urgent to report is an app you stop trusting.
+    Price movement doesn't tell the whole story. Baseline also looks at
+    trading volume to add context to an unusual move.
   </p>
 
-  <h2>What it won't claim</h2>
+  <div class="eg">
+    <b>3.6× normal volume</b> — the move has much broader trading activity.<br><br>
+    <b>0.3× normal volume</b> — the move happened on unusually thin trading.
+  </div>
+
   <p>
-    New stocks need about 20 days of history before there's anything to
-    compare against. Until then Baseline says it doesn't know, rather than
-    guessing.
-  </p>
-  <p>
-    Prices come from Yahoo Finance and can be delayed or briefly unavailable.
-    Every stock shows how old its data is, and whether the market is open —
-    a price you see at 9pm is a closing price, not a live one.
+    The second case is deliberately treated with caution.
+    Price alone isn't enough to claim that something significant happened.
   </p>
 
-  <h2>What this isn't</h2>
+  <h2>What happens when nothing happens?</h2>
+
+  <div class="quiet">
+    <strong>Nothing unusual is a useful result.</strong>
+    <span>
+      If none of your stocks crossed their normal range, Baseline stays quiet.
+      The goal isn't to manufacture alerts — it's to surface meaningful changes.
+    </span>
+  </div>
+
+  <h2>New stocks need time</h2>
+
   <p>
-    Baseline tells you what changed. It doesn't tell you what will happen
-    next, and it isn't advice. An unusual move is a reason to look, not a
-    reason to act.
+    A new stock needs roughly 20 days of history before Baseline has enough
+    information to make a meaningful comparison. Until then, it says it
+    doesn't know rather than pretending it does.
   </p>
 
-  <footer><a href="/">&larr; Back to your watchlist</a></footer>
+  <h2>Data and limitations</h2>
+
+  <p>
+    Prices come from Yahoo Finance and may be delayed or temporarily
+    unavailable. Baseline shows the age of the data and whether the market
+    is open, so a closing price isn't mistaken for a live price.
+  </p>
+
+  <p>
+    Baseline tells you what changed. It does not predict what happens next
+    and it isn't investment advice. An unusual move is a reason to look,
+    not a reason to act.
+  </p>
+
+  <footer>
+    <a href="/">&larr; Back to your watchlist</a>
+  </footer>
 
 </div>
 </body>

@@ -183,45 +183,335 @@
     color: var(--down); font-family: inherit;
   }
   .panel .rm:hover { border-color: var(--down); }
+
+  /* --- Baseline polish ------------------------------------------------ */
+
+  .gate {
+    max-width: 760px;
+    margin: 34px auto 0;
+  }
+
+  .gate h1 {
+    font-size: 48px;
+    letter-spacing: -0.04em;
+  }
+
+  .gate .sub {
+    font-size: 18px;
+    max-width: 560px;
+    line-height: 1.5;
+  }
+
+  .gate-intro {
+    margin-bottom: 26px;
+  }
+
+  .feature-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 22px 0 20px;
+  }
+
+  .feature {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 15px 16px;
+  }
+
+  .feature strong {
+    display: block;
+    font-size: 15px;
+    margin-bottom: 3px;
+  }
+
+  .feature span {
+    display: block;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .demo {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin: 20px 0 26px;
+  }
+
+  .demo-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+
+  .demo-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .demo-ticker {
+    font-size: 21px;
+    font-weight: 600;
+  }
+
+  .demo-company {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 1px;
+  }
+
+  .demo-price {
+    text-align: right;
+    font-size: 21px;
+    font-weight: 600;
+  }
+
+  .demo-change {
+    font-size: 14px;
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  .demo-divider {
+    border-top: 1px solid var(--line);
+    margin: 16px 0;
+  }
+
+  .demo-changebox {
+    background: var(--flag);
+    border: 1px solid var(--flag-edge);
+    border-radius: 9px;
+    padding: 13px 15px;
+  }
+
+  .demo-changebox strong {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 3px;
+  }
+
+  .demo-changebox span {
+    color: #5a4f38;
+    font-size: 14px;
+  }
+
+  .demo-baseline {
+    margin-top: 13px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .demo-baseline b {
+    color: var(--ink);
+  }
+
+  .value-line {
+    text-align: center;
+    color: var(--muted);
+    font-size: 15px;
+    margin: 4px 0 24px;
+  }
+
+  .value-line b {
+    color: var(--ink);
+  }
+
+  .auth-box {
+    max-width: 390px;
+    margin: 0 auto;
+  }
+
+  .auth-heading {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+
+  .auth-caption {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 18px;
+  }
+
+  .market {
+    font-size: 16px;
+  }
+
+  @media (max-width: 650px) {
+    .wrap {
+      padding: 30px 18px 60px;
+    }
+
+    .gate {
+      margin-top: 15px;
+    }
+
+    .gate h1 {
+      font-size: 42px;
+    }
+
+    .feature-strip {
+      grid-template-columns: 1fr;
+    }
+
+    .demo {
+      padding: 17px;
+    }
+
+    .demo-top {
+      gap: 12px;
+    }
+
+    .demo-ticker,
+    .demo-price {
+      font-size: 19px;
+    }
+
+    header {
+      gap: 12px;
+    }
+
+    header h1 {
+      font-size: 38px;
+    }
+
+    .market {
+      font-size: 14px;
+      padding: 8px 12px;
+    }
+
+    .add {
+      flex-direction: column;
+    }
+
+    .add button {
+      width: 100%;
+    }
+
+    .row {
+      gap: 10px;
+      font-size: 16px;
+    }
+
+    .row .price {
+      font-size: 15px;
+    }
+  }
+
 </style>
 </head>
 <body>
 <div class="wrap" id="gate" style="display:none">
   <div class="gate">
-    <h1>Baseline</h1>
-    <p class="sub">A watchlist that tells you what actually changed.</p>
 
-    <div class="waking" id="waking" style="display:none">
-      Waking the server up. Free hosting sleeps after a few minutes idle,
-      so this first load can take up to a minute. Later ones are instant.
-    </div>
-
-    <div class="error" id="gateError" style="display:none"></div>
-
-    <label for="u">Username</label>
-    <input id="u" autocomplete="username">
-
-    <div id="emailRow" style="display:none">
-      <label for="e">Email</label>
-      <input id="e" type="email" autocomplete="email">
-      <p style="font-size:14px;color:var(--muted);margin:6px 0 0">
-        Used only to recover your account. Nothing else.
+    <div class="gate-intro">
+      <h1>Baseline</h1>
+      <p class="sub">
+        A watchlist that tells you <b>what actually changed</b> —
+        not just what moved.
       </p>
     </div>
 
-    <label for="p">Password</label>
-    <input id="p" type="password" autocomplete="current-password">
+    <div class="feature-strip">
+      <div class="feature">
+        <strong>Its own baseline</strong>
+        <span>Every stock is compared with its normal behaviour.</span>
+      </div>
 
-    <button class="go" id="goBtn">Log in</button>
+      <div class="feature">
+        <strong>Meaningful changes</strong>
+        <span>Unusual moves stand out instead of constant alerts.</span>
+      </div>
 
-    <p class="swap" id="forgotRow">
-      <button id="forgotBtn">Forgotten your password?</button>
+      <div class="feature">
+        <strong>Catch up later</strong>
+        <span>See what happened while you were away.</span>
+      </div>
+    </div>
+
+    <div class="demo">
+      <div class="demo-label">What Baseline looks for</div>
+
+      <div class="demo-top">
+        <div>
+          <div class="demo-ticker">RELIANCE.NS</div>
+          <div class="demo-company">Example stock</div>
+        </div>
+
+        <div>
+          <div class="demo-price">₹1,467</div>
+          <div class="demo-change up">+3.3% today</div>
+        </div>
+      </div>
+
+      <div class="demo-divider"></div>
+
+      <div class="demo-changebox">
+        <strong>Something changed.</strong>
+        <span>
+          Today's move is much larger than this stock's typical daily move.
+          Baseline flags it for a closer look.
+        </span>
+      </div>
+
+      <div class="demo-baseline">
+        Compared with its own recent behaviour · <b>not a fixed 5% rule</b>
+      </div>
+    </div>
+
+    <p class="value-line">
+      <b>Track less. Understand more.</b>
+      &nbsp; Your watchlist stays quiet when nothing unusual happened.
     </p>
 
-    <p class="swap" id="swap">
-      <span id="swapText">New here?</span>
-      <button id="swapBtn">Create an account</button>
-    </p>
+    <div class="auth-box">
+
+      <div class="auth-heading" id="authHeading">Log in to your watchlist</div>
+      <p class="auth-caption" id="authCaption">
+        Your stocks and baselines stay connected to your account.
+      </p>
+
+      <div class="waking" id="waking" style="display:none">
+        Starting Baseline… the server may take a few seconds to wake up.
+      </div>
+
+      <div class="error" id="gateError" style="display:none"></div>
+
+      <label for="u">Username</label>
+      <input id="u" autocomplete="username">
+
+      <div id="emailRow" style="display:none">
+        <label for="e">Email</label>
+        <input id="e" type="email" autocomplete="email">
+        <p style="font-size:14px;color:var(--muted);margin:6px 0 0">
+          Used only to recover your account. Nothing else.
+        </p>
+      </div>
+
+      <label for="p">Password</label>
+      <input id="p" type="password" autocomplete="current-password">
+
+      <button class="go" id="goBtn">Log in</button>
+
+      <p class="swap" id="forgotRow">
+        <button id="forgotBtn">Forgotten your password?</button>
+      </p>
+
+      <p class="swap" id="swap">
+        <span id="swapText">New here?</span>
+        <button id="swapBtn">Create an account</button>
+      </p>
+
+    </div>
+
   </div>
 </div>
 
@@ -557,6 +847,18 @@ function setMode(mode) {
   $("swapBtn").textContent = mode === "login" ? "Create an account" : "Log in";
   $("emailRow").style.display = mode === "signup" ? "block" : "none";
   $("forgotRow").style.display = mode === "login" ? "block" : "none";
+
+  if ($("authHeading")) {
+    $("authHeading").textContent =
+      mode === "login" ? "Log in to your watchlist" : "Create your Baseline account";
+  }
+
+  if ($("authCaption")) {
+    $("authCaption").textContent =
+      mode === "login"
+        ? "Your stocks and baselines stay connected to your account."
+        : "Start tracking what changes in the stocks you care about.";
+  }
 }
 
 function clearError() {
