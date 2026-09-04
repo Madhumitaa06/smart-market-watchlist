@@ -21,8 +21,9 @@
   h1 { font-size: 44px; margin: 0; letter-spacing: -0.03em; }
   .sub { color: var(--muted); font-size: 16px; margin: 6px 0 0; }
   .market {
-    font-size: 14px; color: var(--muted); white-space: nowrap;
-    border: 1px solid var(--line); border-radius: 99px; padding: 6px 14px;
+    font-size: 18px; font-weight: 600; color: var(--ink); white-space: nowrap;
+    border: 1px solid var(--line); border-radius: 99px; padding: 10px 20px;
+    background: var(--card);
   }
 
   .summary { margin: 28px 0; font-size: 22px; line-height: 1.4; }
@@ -43,6 +44,30 @@
     padding: 12px 14px; border-radius: 8px; margin-bottom: 16px; font-size: 16px;
   }
 
+  .catchup {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; padding: 22px 24px; margin: 8px 0 32px;
+  }
+  .catchup h3 {
+    font-size: 13px; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--muted); margin: 0 0 12px; font-weight: 600;
+  }
+  .catchup .headline { font-size: 20px; margin: 0 0 4px; line-height: 1.4; }
+  .catchup .since { font-size: 14px; color: var(--muted); margin: 0; }
+  .cu-event {
+    padding: 14px 0; border-top: 1px solid var(--line); font-size: 16px;
+  }
+  .cu-event:first-of-type { margin-top: 16px; }
+  .cu-event .meta {
+    font-size: 14px; color: var(--muted); margin-bottom: 3px;
+  }
+  .cu-event .meta b { color: var(--ink); font-weight: 600; }
+  .cu-event .what { line-height: 1.5; }
+  .catchup .more {
+    margin-top: 14px; background: none; border: none; padding: 0;
+    color: var(--muted); text-decoration: underline; cursor: pointer;
+    font-size: 15px; font-family: inherit;
+  }
   .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: 32px 0 8px; }
   .tab {
     background: none; border: none; cursor: pointer; font-size: 16px;
@@ -79,6 +104,33 @@
   .num { font-variant-numeric: tabular-nums; }
   .empty { color: var(--muted); padding: 32px 0; }
 
+  .gate { max-width: 380px; margin: 60px auto 0; }
+  .gate h1 { font-size: 40px; margin-bottom: 4px; }
+  .gate .sub { margin-bottom: 32px; }
+  .gate label { display: block; font-size: 15px; color: var(--muted); margin: 16px 0 6px; }
+  .gate input {
+    width: 100%; padding: 13px 15px; font-size: 17px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--card);
+    font-family: inherit;
+  }
+  .gate button.go {
+    width: 100%; margin-top: 24px; padding: 14px; font-size: 17px; cursor: pointer;
+    background: var(--ink); color: #fff; border: none; border-radius: 8px;
+    font-family: inherit;
+  }
+  .gate button.go:disabled { opacity: .5; cursor: default; }
+  .gate .swap {
+    margin-top: 20px; text-align: center; font-size: 15px; color: var(--muted);
+  }
+  .gate .swap button {
+    background: none; border: none; color: var(--ink); cursor: pointer;
+    text-decoration: underline; font-size: 15px; font-family: inherit; padding: 0;
+  }
+  .who { font-size: 15px; color: var(--muted); }
+  .who button {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    text-decoration: underline; font-size: 15px; font-family: inherit;
+  }
   footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--line); }
   footer a { color: var(--muted); font-size: 16px; }
 
@@ -114,6 +166,12 @@
   .fact .v { text-align: right; font-variant-numeric: tabular-nums; }
   .grp { font-size: 13px; text-transform: uppercase; letter-spacing: .1em;
          color: var(--muted); margin: 28px 0 4px; font-weight: 600; }
+  .event {
+    padding: 14px 0; border-bottom: 1px solid var(--line); font-size: 16px;
+  }
+  .event .when { font-size: 14px; color: var(--muted); margin-bottom: 4px; }
+  .event .what { line-height: 1.5; }
+  .loading { color: var(--muted); font-size: 15px; padding: 12px 0; }
   .panel .rm {
     margin-top: 28px; width: 100%; padding: 12px; font-size: 16px; cursor: pointer;
     background: none; border: 1px solid var(--line); border-radius: 8px;
@@ -123,14 +181,51 @@
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="wrap" id="gate" style="display:none">
+  <div class="gate">
+    <h1>Baseline</h1>
+    <p class="sub">A watchlist that tells you what actually changed.</p>
+
+    <div class="error" id="gateError" style="display:none"></div>
+
+    <label for="u">Username</label>
+    <input id="u" autocomplete="username">
+
+    <div id="emailRow" style="display:none">
+      <label for="e">Email</label>
+      <input id="e" type="email" autocomplete="email">
+      <p style="font-size:14px;color:var(--muted);margin:6px 0 0">
+        Used only to recover your account. Nothing else.
+      </p>
+    </div>
+
+    <label for="p">Password</label>
+    <input id="p" type="password" autocomplete="current-password">
+
+    <button class="go" id="goBtn">Log in</button>
+
+    <p class="swap" id="forgotRow">
+      <button id="forgotBtn">Forgotten your password?</button>
+    </p>
+
+    <p class="swap" id="swap">
+      <span id="swapText">New here?</span>
+      <button id="swapBtn">Create an account</button>
+    </p>
+  </div>
+</div>
+
+<div class="wrap" id="app" style="display:none">
 
   <header>
     <div>
       <h1>Baseline</h1>
       <p class="sub">A watchlist that tells you what actually changed.</p>
     </div>
-    <span class="market" id="market">&nbsp;</span>
+    <div style="text-align:right">
+      <span class="market" id="market">&nbsp;</span>
+      <p class="who"><button id="logoutBtn">Log out</button></p>
+    </div>
   </header>
 
   <p class="summary" id="summary">Loading…</p>
@@ -140,6 +235,8 @@
     <input id="ticker" placeholder="Add a stock, e.g. RELIANCE.NS" autocomplete="off">
     <button id="addBtn">Add</button>
   </div>
+
+  <div class="catchup" id="catchup" style="display:none"></div>
 
   <div class="tabs" id="tabs"></div>
   <div id="body"></div>
@@ -282,6 +379,8 @@ function openPanel(ticker) {
     html += `</div>`;
   }
 
+  html += `<div class="grp">Past unusual days</div>
+             <div id="events"><p class="loading">Looking through its history…</p></div>`;
   html += `<button class="rm" id="rmBtn">Remove from watchlist</button>`;
 
   $("panel").innerHTML = html;
@@ -290,6 +389,31 @@ function openPanel(ticker) {
 
   $("closeBtn").onclick = closePanel;
   $("rmBtn").onclick = () => { closePanel(); remove(ticker); };
+
+  if (s.ok) loadEvents(ticker);
+}
+
+async function loadEvents(ticker) {
+  try {
+    const res = await fetch(`/events/${encodeURIComponent(ticker)}`);
+    const data = await res.json();
+    const box = document.getElementById("events");
+    if (!box) return;
+
+    if (!data.events.length) {
+      box.innerHTML = `<p class="loading">No unusual days in the last 60 - this stock has been steady.</p>`;
+      return;
+    }
+
+    box.innerHTML = data.events.slice(0, 6).map(e => `
+      <div class="event">
+        <div class="when">${e.date}</div>
+        <div class="what">${e.message}</div>
+      </div>`).join("");
+  } catch (err) {
+    const box = document.getElementById("events");
+    if (box) box.innerHTML = `<p class="loading">Couldn't load past events.</p>`;
+  }
 }
 
 function closePanel() {
@@ -300,6 +424,41 @@ function closePanel() {
 $("scrim").onclick = closePanel;
 document.onkeydown = e => { if (e.key === "Escape") closePanel(); };
 
+async function loadDigest() {
+  try {
+    const res = await fetch("/digest");
+    if (!res.ok) return;
+    const d = await res.json();
+
+    const box = $("catchup");
+    let html = `<h3>Since you last looked</h3>
+                <p class="headline">${d.summary}</p>`;
+
+    if (d.since && !d.first_visit) {
+      html += `<p class="since">Last visit ${d.since.split(" ")[0]}</p>`;
+    }
+
+    const shown = d.events.slice(0, 5);
+    for (const e of shown) {
+      html += `<div class="cu-event">
+                 <div class="meta"><b>${e.ticker}</b> &middot; ${e.date}</div>
+                 <div class="what">${e.message}</div>
+               </div>`;
+    }
+
+    if (d.events.length > 5) {
+      html += `<p class="since" style="margin-top:14px">
+                 and ${d.events.length - 5} more.
+               </p>`;
+    }
+
+    box.innerHTML = html;
+    box.style.display = "block";
+  } catch (e) {
+    // The digest is additive - if it fails, the watchlist still works.
+  }
+}
+
 async function load() {
   try {
     const res = await fetch("/watchlist");
@@ -307,7 +466,7 @@ async function load() {
     DATA = await res.json();
 
     $("summary").textContent = DATA.summary || "";
-    $("market").textContent = DATA.market_open ? "market open" : "market closed";
+    $("market").textContent = DATA.market_open ? "Market open" : "Market closed";
 
     // Land on whichever tab has something worth seeing.
     if ((DATA.needs_attention || []).length) TAB = "needs_attention";
@@ -316,6 +475,7 @@ async function load() {
     renderTabs();
     renderList();
     showError(null);
+    loadDigest();
   } catch (e) {
     showError(e.message);
   }
@@ -360,7 +520,138 @@ async function remove(ticker) {
 $("addBtn").onclick = add;
 $("ticker").onkeydown = e => { if (e.key === "Enter") add(); };
 
-load();
+
+// --- Auth ---------------------------------------------------------------
+
+let MODE = "login";   // or "signup"
+
+function showGate(msg) {
+  $("gate").style.display = "block";
+  $("app").style.display = "none";
+  if (msg) {
+    $("gateError").textContent = msg;
+    $("gateError").style.display = "block";
+  }
+}
+
+function showApp() {
+  $("gate").style.display = "none";
+  $("app").style.display = "block";
+  load();
+}
+
+function setMode(mode) {
+  MODE = mode;
+  $("goBtn").textContent = mode === "login" ? "Log in" : "Create account";
+  $("swapText").textContent = mode === "login" ? "New here?" : "Already have an account?";
+  $("swapBtn").textContent = mode === "login" ? "Create an account" : "Log in";
+  $("emailRow").style.display = mode === "signup" ? "block" : "none";
+  $("forgotRow").style.display = mode === "login" ? "block" : "none";
+}
+
+function clearError() {
+  $("gateError").style.display = "none";
+}
+
+$("swapBtn").onclick = () => { clearError(); setMode(MODE === "login" ? "signup" : "login"); };
+
+async function submitAuth() {
+  const username = $("u").value.trim();
+  const password = $("p").value;
+  if (!username || !password) return;
+
+  const btn = $("goBtn");
+  btn.disabled = true;
+  btn.textContent = MODE === "login" ? "Logging in…" : "Creating…";
+
+  try {
+    const payload = { username, password };
+    if (MODE === "signup") payload.email = $("e").value.trim();
+
+    const res = await fetch("/" + (MODE === "login" ? "login" : "signup"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      $("gateError").textContent = data.detail || "That didn't work.";
+      $("gateError").style.display = "block";
+    } else {
+      $("p").value = "";
+      showApp();
+    }
+  } catch (e) {
+    $("gateError").textContent = "Something went wrong. Try again.";
+    $("gateError").style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = MODE === "login" ? "Log in" : "Create account";
+  }
+}
+
+$("goBtn").onclick = submitAuth;
+$("p").onkeydown = e => { if (e.key === "Enter") submitAuth(); };
+$("u").onkeydown = e => { if (e.key === "Enter") $("p").focus(); };
+
+$("forgotBtn").onclick = async () => {
+  const email = prompt("What email did you sign up with?");
+  if (!email) return;
+
+  const res = await fetch("/reset/start", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email })
+  });
+  const data = await res.json();
+
+  // In a deployed system the token arrives by email. Delivery is out of
+  // scope here, so the API hands it back and we continue in the browser.
+  if (!data.dev_token) {
+    alert(data.message);
+    return;
+  }
+
+  const pw = prompt(
+    `Your username is ${data.dev_username}.\n\n` +
+    `Email delivery isn't wired up, so the reset token is being handled here.\n\n` +
+    `Enter a new password (8+ characters):`
+  );
+  if (!pw) return;
+
+  const done = await fetch("/reset/complete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: data.dev_token, password: pw })
+  });
+  const result = await done.json();
+
+  if (!done.ok) {
+    alert(result.detail || "Couldn't reset your password.");
+  } else {
+    alert("Password changed. Log in with your new one.");
+    $("u").value = data.dev_username;
+    $("p").value = "";
+  }
+};
+
+$("logoutBtn").onclick = async () => {
+  await fetch("/logout", { method: "POST" });
+  setMode("login");
+  showGate(null);
+};
+
+// Decide which screen to show on arrival.
+(async () => {
+  try {
+    const res = await fetch("/me");
+    const data = await res.json();
+    if (data.logged_in) showApp(); else showGate(null);
+  } catch (e) {
+    showGate("Couldn't reach the server.");
+  }
+})();
 </script>
 </body>
 </html>

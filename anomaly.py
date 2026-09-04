@@ -168,3 +168,121 @@ def present(stock, market_open):
     stock["headline"] = verdict.get("message")
 
     return stock
+
+
+def past_events(ticker, lookback=60):
+    """
+    Find days in stored history that were anomalous for this stock.
+
+    Runs the same z-score test as the live path, but backwards over each
+    day's move against the 30 days before it - so a flagged past day is
+    judged by the standard that applied at the time, not by today's.
+
+    Real events from real data. Nothing here is synthetic.
+    """
+    history = cache.get_history(ticker, limit=lookback)
+    if len(history) < MIN_DAYS + 5:
+        return []
+
+    events = []
+
+    # Walk forward, using a trailing window as the baseline for each day.
+    for i in range(MIN_DAYS, len(history)):
+        window = history[max(0, i - WINDOW):i]
+        closes = [h["close"] for h in window]
+        volumes = [h["volume"] for h in window]
+
+        returns = _daily_returns(closes)
+        if len(returns) < 5:
+            continue
+
+        stdev = statistics.stdev(returns)
+        if stdev == 0:
+            continue
+        mean = statistics.mean(returns)
+
+        prev = history[i - 1]["close"]
+        today = history[i]
+        if prev == 0:
+            continue
+
+        move = (today["close"] - prev) / prev * 100
+        z = (move - mean) / stdev
+
+        if abs(z) < Z_THRESHOLD:
+            continue
+
+        avg_volume = statistics.mean(volumes)
+        volume_ratio = today["volume"] / avg_volume if avg_volume else None
+        direction = "up" if move > 0 else "down"
+
+        events.append({
+            "date": today["date"],
+            "move_pct": round(move, 2),
+            "z_score": round(z, 2),
+            "typical_move_pct": round(stdev, 2),
+            "volume_ratio": round(volume_ratio, 2) if volume_ratio else None,
+            "message": _describe(True, z, direction, move, stdev, volume_ratio),
+        })
+
+    # Most recent first.
+    events.reverse()
+    return events
+
+
+def digest(ticker, since_date):
+    """
+    Anomalous days for this ticker since a given date.
+
+    Each past day is judged against the 30 days before it, not against
+    today's baseline - a day was unusual by the standard that applied at
+    the time. Using today's numbers to judge August would be reading the
+    past with information it didn't have.
+    """
+    history = cache.get_history(ticker, limit=90)
+    if len(history) < MIN_DAYS + 2:
+        return []
+
+    events = []
+
+    for i in range(MIN_DAYS, len(history)):
+        today = history[i]
+        if since_date and today["date"] <= since_date:
+            continue
+
+        window = history[max(0, i - WINDOW):i]
+        closes = [h["close"] for h in window]
+        volumes = [h["volume"] for h in window]
+
+        returns = _daily_returns(closes)
+        if len(returns) < 5:
+            continue
+
+        stdev = statistics.stdev(returns)
+        if stdev == 0:
+            continue
+        mean = statistics.mean(returns)
+
+        prev = history[i - 1]["close"]
+        if prev == 0:
+            continue
+
+        move = (today["close"] - prev) / prev * 100
+        z = (move - mean) / stdev
+        if abs(z) < Z_THRESHOLD:
+            continue
+
+        avg_volume = statistics.mean(volumes)
+        volume_ratio = today["volume"] / avg_volume if avg_volume else None
+
+        events.append({
+            "ticker": ticker,
+            "date": today["date"],
+            "move_pct": round(move, 2),
+            "z_score": round(z, 2),
+            "message": _describe(True, z, "up" if move > 0 else "down",
+                                 move, stdev, volume_ratio),
+        })
+
+    events.reverse()
+    return events

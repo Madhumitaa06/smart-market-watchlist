@@ -1,19 +1,16 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 import database
 import prices
 import cache
+import auth
 import refresher
 import anomaly
 import market
 
 app = FastAPI(title="Smart Market Watchlist")
-
-# No auth yet. Every request acts as user 1 - the column exists so
-# adding login later doesn't require a schema change.
-CURRENT_USER = 1
 
 
 @app.on_event("startup")
@@ -21,6 +18,7 @@ def startup():
     """Make sure the table exists before serving any requests."""
     database.setup()
     cache.setup()
+    auth.setup()
     refresher.start()
 
 
@@ -29,7 +27,7 @@ class AddStockRequest(BaseModel):
 
 
 @app.get("/watchlist")
-def read_watchlist():
+def read_watchlist(request: Request):
     """
     Return the watchlist split into three groups.
 
@@ -39,7 +37,7 @@ def read_watchlist():
     than one that moved 3%, it's an unknown - and burying it at the bottom
     of a long list means the user may never notice their data is broken.
     """
-    entries = database.get_watchlist(CURRENT_USER)
+    entries = database.get_watchlist(current_user(request))
     tickers = [e["ticker"] for e in entries]
 
     if not tickers:
@@ -102,13 +100,13 @@ def _summarise(flagged, quiet, unavailable):
 
 
 @app.post("/watchlist")
-def add_to_watchlist(request: AddStockRequest):
+def add_to_watchlist(body: AddStockRequest, request: Request):
     """
     Add a ticker to the watchlist.
     Validates the ticker exists before storing it - we don't want dead
     symbols sitting in the list failing on every future load.
     """
-    ticker = request.ticker.strip().upper()
+    ticker = body.ticker.strip().upper()
 
     if not ticker:
         raise HTTPException(status_code=400, detail="Ticker cannot be empty.")
@@ -118,7 +116,7 @@ def add_to_watchlist(request: AddStockRequest):
     if not check["ok"]:
         raise HTTPException(status_code=400, detail=check["message"])
 
-    added = database.add_stock(CURRENT_USER, ticker)
+    added = database.add_stock(current_user(request), ticker)
     if not added:
         raise HTTPException(status_code=409, detail=f"{ticker} is already in your watchlist.")
 
@@ -126,10 +124,10 @@ def add_to_watchlist(request: AddStockRequest):
 
 
 @app.delete("/watchlist/{ticker}")
-def remove_from_watchlist(ticker: str):
+def remove_from_watchlist(ticker: str, request: Request):
     """Remove a ticker from the watchlist."""
     ticker = ticker.strip().upper()
-    removed = database.remove_stock(CURRENT_USER, ticker)
+    removed = database.remove_stock(current_user(request), ticker)
 
     if not removed:
         raise HTTPException(status_code=404, detail=f"{ticker} is not in your watchlist.")
@@ -152,3 +150,205 @@ def how_it_works():
     a user who doesn't understand why it stays quiet will assume it's broken.
     """
     return FileResponse("static/how.html")
+
+
+@app.get("/events/{ticker}")
+def stock_events(ticker: str):
+    """
+    Anomalous days from this stock's stored history.
+
+    Each past day is judged against the 30 days before it, not against
+    today's baseline - a day is unusual by the standard that applied at
+    the time. These are real moves from real data, not examples.
+    """
+    ticker = ticker.strip().upper()
+    prices.ensure_history(ticker)
+    return {"ticker": ticker, "events": anomaly.past_events(ticker)}
+
+
+class Credentials(BaseModel):
+    username: str
+    password: str
+
+
+class SignupRequest(BaseModel):
+    username: str
+    password: str
+    email: str
+
+
+class ResetRequest(BaseModel):
+    email: str
+
+
+class ResetComplete(BaseModel):
+    token: str
+    password: str
+
+
+def current_user(request: Request):
+    """
+    The logged-in user's id, or 401.
+
+    Every watchlist endpoint goes through this rather than reading the
+    cookie itself, so there is one place where identity is decided.
+    """
+    uid = auth.read_session(request.cookies.get(auth.COOKIE_NAME))
+    if uid is None:
+        raise HTTPException(status_code=401, detail="Please log in.")
+    return uid
+
+
+def _set_session(response: Response, user_id: int):
+    response.set_cookie(
+        auth.COOKIE_NAME,
+        auth.make_session(user_id),
+        httponly=True,      # JavaScript can't read it, so XSS can't steal it
+        samesite="lax",     # not sent on cross-site requests
+        max_age=60 * 60 * 24 * 30,
+    )
+
+
+@app.post("/signup")
+def signup(creds: SignupRequest, response: Response):
+    user_id, error = auth.create_user(creds.username, creds.password, creds.email)
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    _set_session(response, user_id)
+    return {"username": creds.username.strip().lower()}
+
+
+@app.post("/login")
+def login(creds: Credentials, response: Response):
+    user_id = auth.verify_user(creds.username, creds.password)
+    if user_id is None:
+        # Same message whether the username is unknown or the password is
+        # wrong - otherwise this endpoint enumerates valid accounts.
+        raise HTTPException(status_code=401, detail="Wrong username or password.")
+    _set_session(response, user_id)
+    return {"username": creds.username.strip().lower()}
+
+
+@app.post("/logout")
+def logout(response: Response):
+    response.delete_cookie(auth.COOKIE_NAME)
+    return {"ok": True}
+
+
+@app.get("/me")
+def me(request: Request):
+    """Who is logged in, if anyone. The frontend uses this to decide what to show."""
+    uid = auth.read_session(request.cookies.get(auth.COOKIE_NAME))
+    return {"logged_in": uid is not None}
+
+
+@app.post("/reset/start")
+def reset_start(body: ResetRequest):
+    """
+    Begin a password reset.
+
+    Always returns the same response whether or not the email is registered.
+    Saying "no account with that email" would let anyone test addresses
+    against the user base.
+
+    Delivery is stubbed: the token comes back in the response instead of
+    being emailed. Generation, hashing, expiry and single-use are real.
+    """
+    token = auth.start_reset(body.email)
+    username = auth.find_username(body.email)
+
+    result = {
+        "message": "If that email is registered, a reset link has been sent."
+    }
+
+    # Stub only - would not exist once email delivery is wired up.
+    if token:
+        result["dev_token"] = token
+        result["dev_username"] = username
+        result["dev_note"] = "Returned here because email delivery is out of scope."
+
+    return result
+
+
+@app.post("/reset/complete")
+def reset_complete(body: ResetComplete):
+    ok, error = auth.complete_reset(body.token, body.password)
+    if not ok:
+        raise HTTPException(status_code=400, detail=error)
+    return {"ok": True}
+
+
+@app.get("/digest")
+def catch_up(request: Request):
+    """
+    What changed since the user last looked.
+
+    Only the anomalous days from the gap - not every day. A user away for
+    three months gets however many events actually occurred, which might be
+    three or eight; the length follows the data, not the calendar.
+
+    A single since-you-left delta would hide the story: -5% on Wednesday and
+    +5% on Thursday nets to zero, when in fact something happened twice.
+    """
+    user_id = current_user(request)
+    last_seen = auth.get_last_viewed(user_id)
+
+    entries = database.get_watchlist(user_id)
+    tickers = [e["ticker"] for e in entries]
+
+    # First visit for a stock: the moment it was added is the baseline,
+    # since the user has never looked at it before.
+    added_at = {e["ticker"]: (e["added_at"] or "")[:10] for e in entries}
+
+    events = []
+    for t in tickers:
+        prices.ensure_history(t)
+        since = last_seen[:10] if last_seen else added_at.get(t)
+        events.extend(anomaly.digest(t, since))
+
+    events.sort(key=lambda e: e["date"], reverse=True)
+
+    # Mark the visit only after a real gap, so refreshing doesn't wipe the
+    # digest and replace it with "nothing in the last five minutes".
+    should_touch = True
+    if last_seen:
+        try:
+            from datetime import datetime
+            gap = datetime.now() - datetime.strptime(last_seen, "%Y-%m-%d %H:%M:%S")
+            should_touch = gap.total_seconds() > 30 * 60
+        except ValueError:
+            should_touch = True
+
+    if should_touch:
+        auth.touch_last_viewed(user_id)
+
+    return {
+        "since": last_seen,
+        "first_visit": last_seen is None,
+        "events": events,
+        "summary": _digest_summary(events, last_seen, len(tickers)),
+    }
+
+
+def _digest_summary(events, last_seen, stock_count):
+    """
+    A blank digest reads as broken; 'nothing significant happened' is a real
+    answer and worth saying out loud.
+    """
+    if not stock_count:
+        return "Add a stock to start tracking what changes."
+
+    if last_seen is None:
+        return "Welcome. From now on, this shows what changed while you were away."
+
+    if not events:
+        return "Nothing significant happened while you were away."
+
+    if len(events) == 1:
+        return f"One thing happened while you were away."
+
+    tickers = len({e["ticker"] for e in events})
+    if tickers == 1:
+        return f"{len(events)} notable days on {events[0]['ticker']} while you were away."
+
+    return f"{len(events)} notable days across {tickers} stocks while you were away."
