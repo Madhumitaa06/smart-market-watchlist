@@ -2,6 +2,8 @@ import logging
 import yfinance as yf
 import requests
 
+import cache
+
 # yfinance prints its own warnings (404s etc). Suppress them so users
 # never see raw library output - our own messages replace them.
 logging.getLogger("yfinance").setLevel(logging.CRITICAL)
@@ -87,3 +89,31 @@ def get_price(ticker):
 def get_prices(tickers):
     """Fetch prices for several tickers. Failures are isolated per ticker."""
     return [get_price(t) for t in tickers]
+
+
+def get_price_cached(ticker):
+    """
+    Cached wrapper around get_price.
+
+    Only successful fetches are cached. Caching a failure would mean a
+    transient Yahoo outage locks in an error for the whole TTL - the user
+    would keep seeing 'unavailable' long after the service recovered.
+    Failures are cheap to retry; stale errors are expensive.
+    """
+    hit = cache.get_quote(ticker)
+    if hit is not None:
+        return hit
+
+    result = get_price(ticker)
+
+    if result["ok"]:
+        cache.put_quote(ticker, result)
+        result["cached"] = False
+        result["age_seconds"] = 0
+
+    return result
+
+
+def get_prices_cached(tickers):
+    """Fetch several tickers, using the cache where possible."""
+    return [get_price_cached(t) for t in tickers]
