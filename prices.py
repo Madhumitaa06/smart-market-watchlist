@@ -117,3 +117,41 @@ def get_price_cached(ticker):
 def get_prices_cached(tickers):
     """Fetch several tickers, using the cache where possible."""
     return [get_price_cached(t) for t in tickers]
+
+
+def fetch_history(ticker, days=60):
+    """
+    Fetch daily closes and store them. Returns the number of rows stored.
+
+    Asks for more calendar days than the 30 trading days we need, because
+    weekends and holidays mean ~60 calendar days yields ~40 trading days.
+    """
+    try:
+        stock = yf.Ticker(ticker)
+        hist = stock.history(period=f"{days}d")
+
+        if hist.empty:
+            return 0
+
+        rows = [
+            (index.strftime("%Y-%m-%d"), float(row["Close"]), int(row["Volume"]))
+            for index, row in hist.iterrows()
+        ]
+        cache.put_history(ticker, rows)
+        return len(rows)
+
+    except Exception:
+        log.exception("Failed fetching history for %s", ticker)
+        return 0
+
+
+def ensure_history(ticker, minimum=20):
+    """
+    Make sure we hold enough history to compute a baseline.
+    Only hits the network when we're short - stored closes never change.
+    """
+    if cache.history_count(ticker) >= minimum:
+        return True
+
+    fetch_history(ticker)
+    return cache.history_count(ticker) >= minimum
