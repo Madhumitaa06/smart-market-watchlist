@@ -406,6 +406,46 @@
     }
   }
 
+
+  .demo-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .demo-stat {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+
+  .demo-stat .label {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 2px;
+  }
+
+  .demo-stat .value {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .last-checked {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 5px 0 0;
+  }
+
+  @media (max-width: 650px) {
+    .demo-stats {
+      grid-template-columns: 1fr;
+    }
+  }
+
 </style>
 </head>
 <body>
@@ -526,6 +566,7 @@
     </div>
     <div style="text-align:right">
       <span class="market" id="market">&nbsp;</span>
+      <p class="last-checked" id="lastChecked">Checking…</p>
       <p class="who"><button id="logoutBtn">Log out</button></p>
     </div>
   </header>
@@ -769,6 +810,10 @@ async function load() {
 
     $("summary").textContent = DATA.summary || "";
     $("market").textContent = DATA.market_open ? "Market open" : "Market closed";
+
+    if ($("lastChecked")) {
+      $("lastChecked").textContent = "Last checked just now";
+    }
 
     // Land on whichever tab has something worth seeing.
     if ((DATA.needs_attention || []).length) TAB = "needs_attention";
