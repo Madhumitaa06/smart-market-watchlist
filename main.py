@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import database
 import prices
 import cache
+import refresher
 import anomaly
 import market
 
@@ -19,6 +20,7 @@ def startup():
     """Make sure the table exists before serving any requests."""
     database.setup()
     cache.setup()
+    refresher.start()
 
 
 class AddStockRequest(BaseModel):

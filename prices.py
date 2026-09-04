@@ -4,6 +4,7 @@ import yfinance as yf
 import requests
 
 import cache
+import fetchguard
 
 # yfinance prints its own warnings (404s etc). Suppress them so users
 # never see raw library output - our own messages replace them.
@@ -92,6 +93,30 @@ def get_prices(tickers):
     return [get_price(t) for t in tickers]
 
 
+def get_price_guarded(ticker):
+    """
+    Cache -> coalesce -> rate limit -> network.
+
+    Cache is checked first and outside the guards: a hit costs nothing and
+    should never queue behind the limiter.
+    """
+    hit = cache.get_quote(ticker)
+    if hit is not None:
+        return hit
+
+    def do_fetch():
+        if not fetchguard.limiter.acquire():
+            return _failure(ticker, SERVICE_UNAVAILABLE)
+        result = get_price(ticker)
+        if result["ok"]:
+            cache.put_quote(ticker, result)
+            result["cached"] = False
+            result["age_seconds"] = 0
+        return result
+
+    return fetchguard.coalesce(ticker, do_fetch)
+
+
 def get_price_cached(ticker):
     """
     Cached wrapper around get_price.
@@ -135,7 +160,7 @@ def get_prices_cached(tickers, max_workers=8):
         return []
 
     with ThreadPoolExecutor(max_workers=min(max_workers, len(tickers))) as pool:
-        return list(pool.map(get_price_cached, tickers))
+        return list(pool.map(get_price_guarded, tickers))
 
 
 def fetch_history(ticker, days=60):
