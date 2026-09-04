@@ -101,3 +101,39 @@ def _describe(unusual, z, direction, move, stdev, volume_ratio):
         return base + f" But volume was only {volume_ratio:.1f}x normal - this could be a single large trade rather than broad activity."
 
     return base + f" Volume was around normal ({volume_ratio:.1f}x)."
+
+
+def enrich(quote):
+    """
+    Attach an anomaly verdict to a price quote.
+
+    A failed quote gets no verdict - there's nothing to assess, and a
+    verdict on missing data would be fabricated.
+    """
+    if not quote.get("ok"):
+        return quote
+
+    quote["anomaly"] = assess(
+        quote["ticker"],
+        quote["change_pct"],
+        quote["volume"],
+    )
+    return quote
+
+
+def enrich(quote):
+    """
+    Attach an anomaly verdict to a price quote.
+
+    A failed quote gets no verdict - there's nothing to assess, and a
+    verdict on missing data would be fabricated.
+    """
+    if not quote.get("ok"):
+        return quote
+
+    quote["anomaly"] = assess(
+        quote["ticker"],
+        quote["change_pct"],
+        quote["volume"],
+    )
+    return quote
