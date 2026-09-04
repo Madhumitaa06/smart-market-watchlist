@@ -1,4 +1,5 @@
 import logging
+from concurrent.futures import ThreadPoolExecutor
 import yfinance as yf
 import requests
 
@@ -114,9 +115,27 @@ def get_price_cached(ticker):
     return result
 
 
-def get_prices_cached(tickers):
-    """Fetch several tickers, using the cache where possible."""
-    return [get_price_cached(t) for t in tickers]
+def get_prices_cached(tickers, max_workers=8):
+    """
+    Fetch several tickers concurrently, using the cache where possible.
+
+    Sequential fetching costs roughly (n x latency); a 20-stock watchlist
+    would block for ~10s. Fetching in parallel makes the total closer to
+    the slowest single call.
+
+    Worker count is capped rather than unbounded: one thread per ticker
+    would hammer Yahoo from a single client and invite rate limiting.
+    Cache hits return without touching the network at all, so in the
+    common case very few of these threads do any real work.
+
+    Order is preserved so the caller can rely on it, regardless of which
+    fetches finish first.
+    """
+    if not tickers:
+        return []
+
+    with ThreadPoolExecutor(max_workers=min(max_workers, len(tickers))) as pool:
+        return list(pool.map(get_price_cached, tickers))
 
 
 def fetch_history(ticker, days=60):
