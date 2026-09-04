@@ -137,3 +137,34 @@ def enrich(quote):
         quote["volume"],
     )
     return quote
+
+
+def _ago(seconds):
+    """Human-readable age. Users think in 'a moment ago', not epoch deltas."""
+    if seconds is None:
+        return None
+    if seconds < 10:
+        return "just now"
+    if seconds < 60:
+        return f"{int(seconds)}s ago"
+    if seconds < 3600:
+        return f"{int(seconds // 60)} min ago"
+    hours = int(seconds // 3600)
+    return f"{hours} hour{'s' if hours > 1 else ''} ago"
+
+
+def present(stock, market_open):
+    """
+    Add display-ready fields.
+
+    Formatting lives here rather than in the frontend so that every client -
+    web, mobile, anything later - shows the same wording. The raw numbers
+    stay in the payload for anyone who wants them.
+    """
+    stock["updated"] = _ago(stock.get("age_seconds"))
+    stock["price_state"] = "live" if market_open else "last close"
+
+    verdict = stock.get("anomaly") or {}
+    stock["headline"] = verdict.get("message")
+
+    return stock

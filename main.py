@@ -46,7 +46,9 @@ def read_watchlist():
     for t in tickers:
         prices.ensure_history(t)
 
-    results = [anomaly.enrich(r) for r in prices.get_prices_cached(tickers)]
+    open_now = market.is_market_open()
+    results = [anomaly.present(anomaly.enrich(r), open_now)
+               for r in prices.get_prices_cached(tickers)]
 
     added_at = {e["ticker"]: e["added_at"] for e in entries}
     for r in results:
