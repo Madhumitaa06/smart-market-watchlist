@@ -420,6 +420,46 @@
       </p>
     </div>
 
+    <div class="auth-box">
+
+      <div class="auth-heading" id="authHeading">Log in to your watchlist</div>
+      <p class="auth-caption" id="authCaption">
+        Your stocks and baselines stay connected to your account.
+      </p>
+
+      <div class="waking" id="waking" style="display:none">
+        Starting Baseline… the server may take a few seconds to wake up.
+      </div>
+
+      <div class="error" id="gateError" style="display:none"></div>
+
+      <label for="u">Username</label>
+      <input id="u" autocomplete="username">
+
+      <div id="emailRow" style="display:none">
+        <label for="e">Email</label>
+        <input id="e" type="email" autocomplete="email">
+        <p style="font-size:14px;color:var(--muted);margin:6px 0 0">
+          Used only to recover your account. Nothing else.
+        </p>
+      </div>
+
+      <label for="p">Password</label>
+      <input id="p" type="password" autocomplete="current-password">
+
+      <button class="go" id="goBtn">Log in</button>
+
+      <p class="swap" id="forgotRow">
+        <button id="forgotBtn">Forgotten your password?</button>
+      </p>
+
+      <p class="swap" id="swap">
+        <span id="swapText">New here?</span>
+        <button id="swapBtn">Create an account</button>
+      </p>
+
+    </div>
+
     <div class="feature-strip">
       <div class="feature">
         <strong>Its own baseline</strong>
@@ -472,45 +512,7 @@
       &nbsp; Your watchlist stays quiet when nothing unusual happened.
     </p>
 
-    <div class="auth-box">
 
-      <div class="auth-heading" id="authHeading">Log in to your watchlist</div>
-      <p class="auth-caption" id="authCaption">
-        Your stocks and baselines stay connected to your account.
-      </p>
-
-      <div class="waking" id="waking" style="display:none">
-        Starting Baseline… the server may take a few seconds to wake up.
-      </div>
-
-      <div class="error" id="gateError" style="display:none"></div>
-
-      <label for="u">Username</label>
-      <input id="u" autocomplete="username">
-
-      <div id="emailRow" style="display:none">
-        <label for="e">Email</label>
-        <input id="e" type="email" autocomplete="email">
-        <p style="font-size:14px;color:var(--muted);margin:6px 0 0">
-          Used only to recover your account. Nothing else.
-        </p>
-      </div>
-
-      <label for="p">Password</label>
-      <input id="p" type="password" autocomplete="current-password">
-
-      <button class="go" id="goBtn">Log in</button>
-
-      <p class="swap" id="forgotRow">
-        <button id="forgotBtn">Forgotten your password?</button>
-      </p>
-
-      <p class="swap" id="swap">
-        <span id="swapText">New here?</span>
-        <button id="swapBtn">Create an account</button>
-      </p>
-
-    </div>
 
   </div>
 </div>
