@@ -103,6 +103,16 @@
   .down { color: var(--down); }
   .num { font-variant-numeric: tabular-nums; }
   .empty { color: var(--muted); padding: 32px 0; }
+  .suggest { padding: 8px 0 32px; }
+  .suggest p { color: var(--muted); margin: 0 0 14px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip {
+    background: var(--card); border: 1px solid var(--line); border-radius: 99px;
+    padding: 9px 18px; font-size: 16px; cursor: pointer; font-family: inherit;
+    color: var(--ink);
+  }
+  .chip:hover { border-color: var(--ink); }
+  .chip:disabled { opacity: .5; cursor: default; }
 
   .gate { max-width: 380px; margin: 60px auto 0; }
   .gate h1 { font-size: 40px; margin-bottom: 4px; }
@@ -627,6 +637,34 @@ function renderTabs() {
 function renderList() {
   const items = DATA[TAB] || [];
 
+  const totalStocks = (DATA.needs_attention || []).length
+                    + (DATA.quiet || []).length
+                    + (DATA.unavailable || []).length;
+
+  if (!totalStocks) {
+    // A blank first screen assumes the user knows NSE ticker format.
+    // These are one tap and teach the format by example.
+    $("body").innerHTML = `
+      <div class="suggest">
+        <p>Nothing here yet. Start with a few of these, or type any NSE ticker above.</p>
+        <div class="chips">
+          ${["RELIANCE.NS","TCS.NS","INFY.NS","HDFCBANK.NS","ICICIBANK.NS",
+             "SBIN.NS","ITC.NS","TATAMOTORS.NS"]
+            .map(t => `<button class="chip" data-add="${t}">${t.replace(".NS","")}</button>`)
+            .join("")}
+        </div>
+      </div>`;
+
+    document.querySelectorAll("[data-add]").forEach(b => {
+      b.onclick = async () => {
+        b.disabled = true;
+        b.textContent = "Adding…";
+        await addTicker(b.dataset.add);
+      };
+    });
+    return;
+  }
+
   if (!items.length) {
     const msg = {
       needs_attention: "Nothing moved unusually. That's the normal state.",
@@ -825,6 +863,27 @@ async function load() {
     loadDigest();
   } catch (e) {
     showError(e.message);
+  }
+}
+
+async function addTicker(value) {
+  try {
+    const res = await fetch("/watchlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticker: value })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showError(data.detail || "Couldn't add that stock.");
+      return false;
+    }
+    showError(null);
+    await load();
+    return true;
+  } catch (e) {
+    showError("Something went wrong. Try again.");
+    return false;
   }
 }
 
