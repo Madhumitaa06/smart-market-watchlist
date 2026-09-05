@@ -27,7 +27,7 @@ class AddStockRequest(BaseModel):
 
 
 @app.get("/watchlist")
-def read_watchlist(request: Request):
+def read_watchlist(request: Request, response: Response):
     """
     Return the watchlist split into three groups.
 
@@ -37,7 +37,7 @@ def read_watchlist(request: Request):
     than one that moved 3%, it's an unknown - and burying it at the bottom
     of a long list means the user may never notice their data is broken.
     """
-    entries = database.get_watchlist(current_user(request))
+    entries = database.get_watchlist(current_user(request, response))
     tickers = [e["ticker"] for e in entries]
 
     if not tickers:
@@ -100,7 +100,7 @@ def _summarise(flagged, quiet, unavailable):
 
 
 @app.post("/watchlist")
-def add_to_watchlist(body: AddStockRequest, request: Request):
+def add_to_watchlist(body: AddStockRequest, request: Request, response: Response):
     """
     Add a ticker to the watchlist.
     Validates the ticker exists before storing it - we don't want dead
@@ -116,7 +116,7 @@ def add_to_watchlist(body: AddStockRequest, request: Request):
     if not check["ok"]:
         raise HTTPException(status_code=400, detail=check["message"])
 
-    added = database.add_stock(current_user(request), ticker)
+    added = database.add_stock(current_user(request, response), ticker)
     if not added:
         raise HTTPException(status_code=409, detail=f"{ticker} is already in your watchlist.")
 
@@ -124,10 +124,10 @@ def add_to_watchlist(body: AddStockRequest, request: Request):
 
 
 @app.delete("/watchlist/{ticker}")
-def remove_from_watchlist(ticker: str, request: Request):
+def remove_from_watchlist(ticker: str, request: Request, response: Response):
     """Remove a ticker from the watchlist."""
     ticker = ticker.strip().upper()
-    removed = database.remove_stock(current_user(request), ticker)
+    removed = database.remove_stock(current_user(request, response), ticker)
 
     if not removed:
         raise HTTPException(status_code=404, detail=f"{ticker} is not in your watchlist.")
@@ -186,17 +186,38 @@ class ResetComplete(BaseModel):
     password: str
 
 
-def current_user(request: Request):
+def current_user(request: Request, response: Response = None):
     """
-    The logged-in user's id, or 401.
+    Who this request belongs to - a signed-in user, or an anonymous guest.
 
-    Every watchlist endpoint goes through this rather than reading the
-    cookie itself, so there is one place where identity is decided.
+    A signup wall before anyone has seen the product is a poor trade: the
+    thing worth signing up for is the thing you can't see yet. So a visitor
+    gets a device-scoped identity and can use the app immediately; if they
+    sign up, their list comes with them.
+
+    One place decides identity, so no endpoint has to think about it.
     """
     uid = auth.read_session(request.cookies.get(auth.COOKIE_NAME))
-    if uid is None:
+    if uid is not None:
+        return uid
+
+    guest = auth.read_session(request.cookies.get(auth.GUEST_COOKIE))
+    if guest is not None:
+        return guest
+
+    if response is None:
+        # No way to hand back a new cookie, so nothing to attach a list to.
         raise HTTPException(status_code=401, detail="Please log in.")
-    return uid
+
+    guest_id = auth.make_guest()
+    response.set_cookie(
+        auth.GUEST_COOKIE,
+        auth.make_session(guest_id),
+        httponly=True,
+        samesite="lax",
+        max_age=60 * 60 * 24 * 90,
+    )
+    return guest_id
 
 
 def _set_session(response: Response, user_id: int):
@@ -210,23 +231,38 @@ def _set_session(response: Response, user_id: int):
 
 
 @app.post("/signup")
-def signup(creds: SignupRequest, response: Response):
+def signup(creds: SignupRequest, request: Request, response: Response):
     user_id, error = auth.create_user(creds.username, creds.password, creds.email)
     if error:
         raise HTTPException(status_code=400, detail=error)
+
+    # Carry across anything added before signing up - otherwise trying the
+    # product first punishes you for it.
+    moved = 0
+    guest_id = auth.read_session(request.cookies.get(auth.GUEST_COOKIE))
+    if guest_id is not None:
+        moved = auth.merge_guest_into(guest_id, user_id)
+        response.delete_cookie(auth.GUEST_COOKIE)
+
     _set_session(response, user_id)
-    return {"username": creds.username.strip().lower()}
+    return {"username": creds.username.strip().lower(), "merged": moved}
 
 
 @app.post("/login")
-def login(creds: Credentials, response: Response):
+def login(creds: Credentials, request: Request, response: Response):
     user_id = auth.verify_user(creds.username, creds.password)
     if user_id is None:
         # Same message whether the username is unknown or the password is
         # wrong - otherwise this endpoint enumerates valid accounts.
         raise HTTPException(status_code=401, detail="Wrong username or password.")
+    moved = 0
+    guest_id = auth.read_session(request.cookies.get(auth.GUEST_COOKIE))
+    if guest_id is not None:
+        moved = auth.merge_guest_into(guest_id, user_id)
+        response.delete_cookie(auth.GUEST_COOKIE)
+
     _set_session(response, user_id)
-    return {"username": creds.username.strip().lower()}
+    return {"username": creds.username.strip().lower(), "merged": moved}
 
 
 @app.post("/logout")
@@ -239,7 +275,11 @@ def logout(response: Response):
 def me(request: Request):
     """Who is logged in, if anyone. The frontend uses this to decide what to show."""
     uid = auth.read_session(request.cookies.get(auth.COOKIE_NAME))
-    return {"logged_in": uid is not None}
+    if uid is not None:
+        return {"logged_in": True, "guest": False}
+
+    guest = auth.read_session(request.cookies.get(auth.GUEST_COOKIE))
+    return {"logged_in": False, "guest": guest is not None}
 
 
 @app.post("/reset/start")

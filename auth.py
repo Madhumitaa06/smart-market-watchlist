@@ -259,3 +259,69 @@ def find_username(email):
     ).fetchone()
     conn.close()
     return row["username"] if row else None
+
+
+# --- Anonymous visitors ---------------------------------------------------
+
+GUEST_COOKIE = "guest"
+
+
+def make_guest():
+    """
+    Create an anonymous identity for someone who hasn't signed up.
+
+    Stored as a real row so the watchlist tables need no special case: a
+    guest is a user with no credentials. The alternative - a separate
+    guest_watchlist table - would mean every query branching on whether
+    the caller is signed in.
+
+    Username and email are generated and unusable for login, so a guest
+    row can never be authenticated into. Only the signed cookie reaches it.
+    """
+    marker = secrets.token_urlsafe(12)
+
+    conn = _conn()
+    cur = conn.execute(
+        "INSERT INTO users (username, password_hash, email) VALUES (?, ?, ?)",
+        (f"guest_{marker}", "!no-login", f"guest_{marker}@invalid.local")
+    )
+    conn.commit()
+    user_id = cur.lastrowid
+    conn.close()
+    return user_id
+
+
+def is_guest(user_id):
+    conn = _conn()
+    row = conn.execute("SELECT username FROM users WHERE id = ?", (user_id,)).fetchone()
+    conn.close()
+    return bool(row) and row["username"].startswith("guest_")
+
+
+def merge_guest_into(guest_id, user_id):
+    """
+    Move a guest's watchlist onto a real account, then delete the guest.
+
+    INSERT OR IGNORE rather than a plain INSERT: the user may have added
+    the same ticker on both sides, and the UNIQUE constraint would abort
+    the whole merge over one collision. Ignoring duplicates means the
+    merge is idempotent - running it twice changes nothing.
+    """
+    if guest_id == user_id:
+        return 0
+
+    conn = _conn()
+    cur = conn.execute(
+        """
+        INSERT OR IGNORE INTO watchlist (user_id, ticker, added_at)
+        SELECT ?, ticker, added_at FROM watchlist WHERE user_id = ?
+        """,
+        (user_id, guest_id)
+    )
+    moved = cur.rowcount
+
+    conn.execute("DELETE FROM watchlist WHERE user_id = ?", (guest_id,))
+    conn.execute("DELETE FROM users WHERE id = ?", (guest_id,))
+    conn.commit()
+    conn.close()
+    return moved
