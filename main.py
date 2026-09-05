@@ -8,6 +8,7 @@ import cache
 import auth
 import refresher
 import anomaly
+import assistant
 import market
 
 app = FastAPI(title="Smart Market Watchlist")
@@ -392,3 +393,25 @@ def _digest_summary(events, last_seen, stock_count):
         return f"{len(events)} notable days on {events[0]['ticker']} while you were away."
 
     return f"{len(events)} notable days across {tickers} stocks while you were away."
+
+
+class Question(BaseModel):
+    question: str
+
+
+@app.post("/ask")
+def ask(body: Question, request: Request, response: Response):
+    """
+    Answer a question from stored data only.
+
+    No model, no generation. Questions are matched to intents and answered by
+    querying the same history the anomaly detector uses, so every figure in a
+    reply is one the system already holds. Investment advice is declined
+    explicitly rather than deflected.
+    """
+    return assistant.answer(body.question, current_user(request, response))
+
+
+@app.get("/ask")
+def ask_page():
+    return FileResponse("static/ask.html")

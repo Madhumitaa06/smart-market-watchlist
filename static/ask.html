@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ask · Baseline</title>
+<style>
+  :root {
+    --bg:#fbfbf9; --card:#fff; --ink:#1a1a1a; --muted:#6b6b6b;
+    --line:#e6e4df; --flag:#f4efe4; --flag-edge:#d9c9a3;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font:17px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width:760px; margin:0 auto; padding:40px 24px 80px; }
+  h1 { font-size:36px; margin:0 0 4px; letter-spacing:-0.03em; }
+  .sub { color:var(--muted); margin:0 0 28px; }
+
+  .scope {
+    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:16px 18px; margin-bottom:28px; font-size:15px; color:var(--muted);
+  }
+  .scope b { color:var(--ink); }
+
+  .thread { margin-bottom:24px; }
+  .turn { margin-bottom:22px; }
+  .q { font-weight:600; margin:0 0 8px; }
+  .a { white-space:pre-wrap; margin:0; }
+  .a.declined {
+    background:var(--flag); border:1px solid var(--flag-edge);
+    border-radius:10px; padding:14px 16px;
+  }
+
+  .askbar { display:flex; gap:10px; }
+  .askbar input {
+    flex:1; padding:14px 16px; font-size:17px; font-family:inherit;
+    border:1px solid var(--line); border-radius:8px; background:var(--card);
+  }
+  .askbar button {
+    padding:14px 26px; font-size:17px; font-family:inherit; cursor:pointer;
+    background:var(--ink); color:#fff; border:none; border-radius:8px;
+  }
+  .askbar button:disabled { opacity:.5; cursor:default; }
+
+  .examples { margin-top:18px; display:flex; flex-wrap:wrap; gap:8px; }
+  .ex {
+    background:none; border:1px solid var(--line); border-radius:99px;
+    padding:8px 15px; font-size:15px; font-family:inherit; cursor:pointer;
+    color:var(--muted);
+  }
+  .ex:hover { border-color:var(--ink); color:var(--ink); }
+
+  footer { margin-top:48px; padding-top:20px; border-top:1px solid var(--line); }
+  footer a { color:var(--muted); font-size:16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Ask</h1>
+  <p class="sub">Questions answered from the price history this app holds.</p>
+
+  <div class="scope">
+    Every answer here comes from stored data — no model, nothing generated.
+    That means it can be <b>wrong about what you meant</b>, but not about the
+    numbers. It won't give investment advice or predict prices.
+  </div>
+
+  <div class="thread" id="thread"></div>
+
+  <div class="askbar">
+    <input id="q" placeholder="How much did RELIANCE move last month?" autocomplete="off">
+    <button id="go">Ask</button>
+  </div>
+
+  <div class="examples" id="examples"></div>
+
+  <footer><a href="/">&larr; Back to your watchlist</a></footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const EXAMPLES = [
+  "How much did RELIANCE move last year?",
+  "Has TCS had any unusual days?",
+  "How volatile is INFY?",
+  "What's the highest RELIANCE has been?",
+  "What's in my watchlist?",
+  "Should I buy TCS?",
+];
+
+$("examples").innerHTML = EXAMPLES
+  .map(e => `<button class="ex" data-ex="${e}">${e}</button>`).join("");
+
+document.querySelectorAll("[data-ex]").forEach(b => {
+  b.onclick = () => { $("q").value = b.dataset.ex; send(); };
+});
+
+async function send() {
+  const question = $("q").value.trim();
+  if (!question) return;
+
+  const btn = $("go");
+  btn.disabled = true;
+  btn.textContent = "…";
+
+  const turn = document.createElement("div");
+  turn.className = "turn";
+  turn.innerHTML = `<p class="q">${question}</p><p class="a">…</p>`;
+  $("thread").appendChild(turn);
+  $("q").value = "";
+
+  try {
+    const res = await fetch("/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question })
+    });
+    const data = await res.json();
+    const p = turn.querySelector(".a");
+    p.textContent = data.answer;
+    if (data.kind === "declined") p.classList.add("declined");
+  } catch (e) {
+    turn.querySelector(".a").textContent = "Couldn't reach the server.";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Ask";
+    turn.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+}
+
+$("go").onclick = send;
+$("q").onkeydown = e => { if (e.key === "Enter") send(); };
+</script>
+</body>
+</html>
