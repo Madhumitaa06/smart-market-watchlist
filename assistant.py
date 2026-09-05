@@ -23,9 +23,12 @@ import anomaly
 # unlicensed source is a regulatory line, not a stylistic one.
 ADVICE_PATTERNS = [
     r"\bshould i (buy|sell|invest|hold|exit)",
-    r"\bis (it|this|that) a good (buy|investment|time|entry|stock)",
+    r"\bis \w+ (a )?good (buy|investment|time|entry|stock|idea)",
+    r"\b(good|bad) (time|idea) to (buy|sell|invest|enter|exit)",
+    r"\bshould .* (buy|sell|invest in|hold)",
     r"\bworth (buying|investing|holding)",
-    r"\bwill (it|this|the price|the stock) (go|rise|fall|drop|increase|crash)",
+    r"\bwill \w+ (go|rise|fall|drop|increase|decrease|crash|recover|bounce)",
+    r"\b(going|likely) to (go|rise|fall|drop|crash|recover)",
     r"\bwhat will .* (be|do) (tomorrow|next|in)",
     r"\bpredict",
     r"\bforecast",
@@ -69,13 +72,19 @@ def _find_ticker(text, user_tickers):
         if re.search(rf"\b{re.escape(base)}\b", upper):
             return t
 
-    match = re.search(r"\b([A-Z][A-Z0-9&\-]{1,19})(?:\.NS)?\b", upper)
-    if match:
-        candidate = match.group(1)
-        skip = {"I", "THE", "A", "IS", "HOW", "WHAT", "MY", "IN", "ON", "OF",
-                "DID", "DOES", "HAS", "HAVE", "LAST", "THIS", "AND", "OR",
-                "MUCH", "MOVE", "MOVED", "DAY", "DAYS", "WEEK", "MONTH", "YEAR"}
-        if candidate not in skip and len(candidate) >= 3:
+    # Scan every candidate rather than only the first. "How much did RELIANCE
+    # move" starts with a common word, and stopping at the first match would
+    # give up before reaching the ticker.
+    skip = {"I", "THE", "AND", "IS", "HOW", "WHAT", "MY", "IN", "ON", "OF",
+            "DID", "DOES", "HAS", "HAVE", "LAST", "THIS", "OR", "FOR", "WAS",
+            "MUCH", "MOVE", "MOVED", "DAY", "DAYS", "WEEK", "MONTH", "YEAR",
+            "ANY", "UNUSUAL", "VOLATILE", "HIGHEST", "LOWEST", "STOCK",
+            "STOCKS", "ABOUT", "OVER", "SINCE", "FROM", "THAT", "THERE",
+            "BEEN", "HAVE", "WITH", "PAST", "RECENT", "RECENTLY", "TELL",
+            "SHOW", "GIVE", "PRICE", "TODAY", "NOW", "GOOD", "BAD"}
+
+    for candidate in re.findall(r"\b([A-Z][A-Z0-9&\-]{2,19})(?:\.NS)?\b", upper):
+        if candidate not in skip:
             return candidate if candidate.endswith(".NS") else candidate + ".NS"
 
     return None
