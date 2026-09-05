@@ -25,7 +25,7 @@ Plus a panel at the top telling you what happened while you were gone.
 
 On 6 August, Reliance moved 3.52%.
 
-A watchlist with a 5% alert threshold says nothing. Baseline says:
+Most watchlists show you the number and stop there. Baseline says:
 
 > **RELIANCE.NS · 2026-08-06**
 > Moved up 3.52% — about 3.0× its typical daily range. On 1.7× normal volume,
@@ -56,6 +56,9 @@ were away, each with a date and a reason.
 today's move, volume against its 30-day average, data freshness, and past
 unusual days from its own history.
 
+**Ask** — questions answered from stored history. "How much did RELIANCE move
+last year?", "Has TCS had any unusual days?", "How volatile is INFY?"
+
 **How this works** — a page inside the product explaining the reasoning. A user
 who doesn't understand why the app stays quiet will assume it's broken.
 
@@ -68,11 +71,11 @@ You can use all of it without signing up. Your list follows you if you do.
 Most watchlists show prices and leave you to work out whether a number means
 anything.
 
-Flat percentage alerts are the industry norm, and they have a structural
-problem no amount of tuning fixes: set the threshold low and everything is
-flagged, which means nothing is; set it high and you miss real events on
-calmer stocks. Products that go this route often end up shipping controls to
-mute alerts, which treats the symptom rather than the cause.
+Flat percentage alerts are common, and they have a structural problem no amount
+of tuning fixes: set the threshold low and everything is flagged, which means
+nothing is; set it high and you miss real events on calmer stocks. The usual
+response is to let users mute alerts, which treats the symptom rather than the
+cause.
 
 Baseline judges every stock against **its own** recent behaviour, and stays
 quiet otherwise.
@@ -211,6 +214,62 @@ your data is missing.
 
 ---
 
+## The assistant, and why it has no model
+
+There's a question box at `/ask`. It has no language model behind it. Questions
+are matched to intents and answered by querying the same history the anomaly
+detector uses, so every figure in a reply is one the system already holds and
+could show you.
+
+That constraint is the point. Nothing else in this product asserts anything it
+can't back with a number, and a generative assistant would be the one component
+that could — fluent, plausible, and hard to check. Deterministic lookups have
+their own failure mode: they can misread what you meant, and they only handle
+the phrasings I anticipated. But when they do answer, the figure comes straight
+from the stored data rather than from a model's account of it. The page says as
+much rather than hiding it.
+
+It also declines investment advice explicitly:
+
+> I can tell you what a stock has done — how it moved, whether that was unusual
+> for it, when it last had a notable day. I can't tell you whether to buy, sell
+> or hold, or where a price is going. That's investment advice, and it isn't
+> something this app is set up to give.
+
+Advice patterns are checked *before* anything else, so "should I buy Reliance"
+is declined rather than answered as a price query because it happens to contain
+a ticker. Unlicensed investment advice is a regulatory line, not a stylistic
+preference.
+
+The trade-off is narrower conversational range. That's the cost of every answer
+being traceable, and I'd make the same call again.
+
+---
+
+## Tests
+
+    python3 -m pytest tests/ --ignore=tests/manual
+
+44 tests covering anomaly detection, failure classification, caching, auth,
+reset tokens, coalescing, rate limiting and the assistant. Each runs against a
+throwaway database, so the suite never touches real data.
+
+They earned their place immediately. Three bugs surfaced on the first run, all
+in the assistant's advice refusal and all the same shape: the patterns assumed
+pronouns — "will *it* go up" — where users write ticker names. Before the fix,
+"Is RELIANCE a good investment?" and "Will INFY go up tomorrow?" were answered
+as data queries rather than declined. In a finance app that's the one failure
+you can't ship.
+
+A related bug in ticker extraction: it checked only the first regex match, so
+"How much did RELIANCE move" stopped at "HOW", found it in the skip list, and
+gave up rather than reading on.
+
+`tests/manual/` holds the exploratory scripts used while building — they print
+rather than assert, and are excluded from the suite.
+
+---
+
 ## Security
 
 - Passwords hashed with bcrypt, never stored. bcrypt directly rather than via
@@ -246,6 +305,8 @@ your data is missing.
 - **Similar-stock recommendations.** They optimise for adding more stocks, not a
   more useful watchlist. A watchlist isn't better with more entries — it's
   better with the right ones.
+- **A generative assistant.** See above — traceability mattered more than
+  conversational range.
 - **Portfolio tracking.** The brief asks for a watchlist. Holdings, cost basis
   and P&L are a different product.
 - **News as a dependency.** Yahoo's news is reachable but inconsistent, and
@@ -290,6 +351,7 @@ on restart.
 |---|---|
 | `main.py` | API endpoints, request handling, identity resolution |
 | `anomaly.py` | Z-score detection, verdict wording, digest |
+| `assistant.py` | Question routing, data lookups, advice refusal |
 | `prices.py` | yfinance access, failure classification, caching wrapper |
 | `cache.py` | Quote cache and daily history store |
 | `market.py` | NSE hours, market-aware TTL |
@@ -297,5 +359,6 @@ on restart.
 | `refresher.py` | Background warming of popular tickers |
 | `auth.py` | Accounts, sessions, password reset, guest identities |
 | `database.py` | Watchlist storage |
-| `static/` | Frontend and the reasoning page |
+| `static/` | Frontend, reasoning page, assistant page |
+| `tests/` | Automated suite; `tests/manual/` holds exploratory scripts |
 | `notes.txt` | Decision log kept while building |
