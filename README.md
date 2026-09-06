@@ -43,6 +43,8 @@ A watchlist that flags everything is as useless as one that flags nothing.
 
 Open the live link, or:
 
+![Main view](screenshots/main.png)
+
 **Empty state** — eight one-tap NSE tickers, because a blank box assumes you
 know the `.NS` format.
 
@@ -52,12 +54,18 @@ one line so flagged ones stand out.
 **Since you last looked** — a panel listing the days that mattered while you
 were away, each with a date and a reason.
 
+![Since you last looked](screenshots/digest.png)
+
 **Detail panel** — click any stock for the full verdict, its typical range vs
 today's move, volume against its 30-day average, data freshness, and past
 unusual days from its own history.
 
+![Detail panel](screenshots/detail.png)
+
 **Ask** — questions answered from stored history. "How much did RELIANCE move
 last year?", "Has TCS had any unusual days?", "How volatile is INFY?"
+
+![Ask](screenshots/ask.png)
 
 **How this works** — a page inside the product explaining the reasoning. A user
 who doesn't understand why the app stays quiet will assume it's broken.
