@@ -585,11 +585,15 @@
   <div class="error" id="error" style="display:none"></div>
 
   <div class="add">
-    <input id="ticker" placeholder="Add a stock, e.g. RELIANCE.NS" autocomplete="off">
+    <input id="ticker" placeholder="Add an NSE stock, e.g. RELIANCE.NS or SBIN.NS" autocomplete="off">
     <button id="addBtn">Add</button>
   </div>
 
   <div class="catchup" id="catchup" style="display:none"></div>
+
+  <p style="font-size:14px;color:var(--muted);margin:-8px 0 0">
+    NSE-listed stocks only, using their NSE symbol — SBIN.NS, not SBI.NS.
+  </p>
 
   <div class="tabs" id="tabs"></div>
   <div id="body"></div>
