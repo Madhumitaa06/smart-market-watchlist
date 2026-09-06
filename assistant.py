@@ -216,7 +216,7 @@ def answer(question, user_id):
             "kind": "range",
         }
 
-    if re.search(r"\b(move|moved|change|changed|up|down|perform|gain|lose|lost|return)\b", lower):
+    if re.search(r"\b(move|moved|change|changed|up|down|perform|gain|gained|lose|lost|return|fall|fell|fallen|rise|rose|risen|drop|dropped|climb|climbed|grow|grew|decline|declined)\b", lower):
         if not ticker:
             return _need_ticker()
         days, label = _period_days(q)
